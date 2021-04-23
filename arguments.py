@@ -79,7 +79,7 @@ parser.add_argument('--data_dir_test',
         type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'test'))
 
 
-input_size = 1000
+input_size = 200
 
 args = parser.parse_args()
 args = vars(args)

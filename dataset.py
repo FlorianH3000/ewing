@@ -23,9 +23,8 @@ class ImgDataset(Dataset):
     def __getitem__(self, idx):
      
         img = load_img(self.list_[idx])
-        
-        # img = self.transf(img)
-
+              
+        # img = self.transf(img) 
         
         x = os.path.dirname(self.list_[idx])
         _,lab = os.path.split(x)

@@ -36,31 +36,33 @@ norm_std = [0.229, 0.224, 0.225]
 if args['augmentation'] == True:
 ################### dataloader  ###################
     transf_train = transforms.Compose([
-                                        transforms.CenterCrop((input_size, input_size)),
-                                        transforms.ToTensor(),
-                                        transforms.ToPILImage(),
-                                        transforms.RandomRotation(30),
-                                        transforms.RandomHorizontalFlip(p=0.5),
-                                        transforms.RandomVerticalFlip(p=0.5),
-                                        transforms.RandomPerspective(distortion_scale=0.1, p=0.5, interpolation=2, fill=0),
-                                        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-                                        transforms.RandomCrop(input_size*0.95),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize(norm_mean, norm_std),                               
+                                        # transforms.CenterCrop((input_size, input_size)),
+                                        # transforms.ToTensor(),
+                                        # transforms.ToPILImage(),
+                                        # transforms.RandomRotation(30),
+                                        # transforms.RandomHorizontalFlip(p=0.5),
+                                        # transforms.RandomVerticalFlip(p=0.5),
+                                        # transforms.RandomPerspective(distortion_scale=0.1, p=0.5, interpolation=2, fill=0),
+                                        # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+                                        # transforms.RandomCrop(input_size*0.95),
+                                        # transforms.ToTensor(),
+                                        # transforms.Normalize(norm_mean, norm_std),                               
                                         ])
 else:
-    transf_train = transforms.Compose([#transforms.Normalize(norm_mean, norm_std),
-                                       # transforms.Resize(input_size),
+    transf_train = transforms.Compose([
+                                # transforms.ToPILImage(),
+                                # transforms.Resize(input_size),
                                 # transforms.CenterCrop((input_size, input_size)),                               
                                 # transforms.ToTensor(),
                                 # transforms.Normalize(norm_mean, norm_std),                               
                                 ])
 
-transf_val = transforms.Compose([#transforms.Normalize(norm_mean, norm_std),
-                                 #transforms.Resize(input_size),
-                                    # transforms.CenterCrop((input_size, input_size)),                                    
-                                    # transforms.ToTensor(),
-                                    # transforms.Normalize(norm_mean, norm_std),                                
+transf_val = transforms.Compose([
+                                # transforms.ToPILImage(),
+                                # transforms.Resize(input_size),
+                                # transforms.CenterCrop((input_size, input_size)),                                    
+                                # transforms.ToTensor(),
+                                # transforms.Normalize(norm_mean, norm_std),                                
                                     ])
 
 
@@ -258,18 +260,13 @@ if __name__ == "__main__":
         ### train dice score, acc
             dice_train += ut.dice_score(target_t.cpu().numpy(),pred_t.cpu().numpy())        
         
-            ## visualize training images
-            if batch_idx < 5:    
-                img = data_t.cpu().numpy()
-                plt.figure(dpi=200)
-                plt.axis('off') 
-                plt.imshow(img[0,0,:,:], cmap='bone')
+            # ## visualize training images
+            # if batch_idx < 5:    
+                # img = data_t.cpu().numpy()
                 # plt.figure(dpi=200)
                 # plt.axis('off') 
-                # plt.imshow(img[0,1,:,:], cmap='bone')
-                # plt.figure(dpi=200)
-                # plt.axis('off') 
-                # plt.imshow(img[0,2,:,:], cmap='bone')
+                # plt.imshow(img[0,0,:,:], cmap='bone')
+            #     plt.imsave(r'\\nas.ads.mwn.de\ga87qis\Desktop\code\ewing vs om\results\test{}.png'.format(batch_idx), img[0,2,:,:], dpi=500, cmap='bone')
         
         
         train_dice_score.append(dice_train / total_step_train)  

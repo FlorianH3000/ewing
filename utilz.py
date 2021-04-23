@@ -33,11 +33,12 @@ def load_img(path_img):
     _, ext = os.path.splitext(path_img)
     if len(ext) > 6:
         x = dcmread(path_img).pixel_array.astype(np.float32)/255
-        # x = np.expand_dims(x, 2)
+        # print(x.shape)
+        # x = np.resize(x, (1000,800))
+        # print(x.shape)
         x = np.dstack((x,x,x))
-        print(x.shape)
-        x = np.flip(x, axis=2)
-        print(x.shape)
+        x = np.transpose(x, (2,0,1))
+
  
     return x
         
