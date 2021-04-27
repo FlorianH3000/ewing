@@ -16,10 +16,10 @@ parser.add_argument('--lr',
         type=float, default=0.00001)
 
 parser.add_argument('--epx',
-        type=int, default=2)
+        type=int, default=20)
 
 parser.add_argument('--batch_size',
-        type=int, default=1)
+        type=int, default=2)
 
 """ seed specifies the way the list is shuffled before split for cross validation, defines test data """
 parser.add_argument('--seed',
@@ -79,7 +79,7 @@ parser.add_argument('--data_dir_test',
         type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'test'))
 
 
-input_size = 200
+input_size = 1000
 
 args = parser.parse_args()
 args = vars(args)

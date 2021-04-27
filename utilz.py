@@ -14,6 +14,7 @@ from torchvision import models
 import torch.nn as nn
 from pydicom import dcmread
 import matplotlib.pyplot as plt
+from skimage.transform import rescale, resize
 
 #########################################################################
 def img_display(img):
@@ -33,12 +34,20 @@ def load_img(path_img):
     _, ext = os.path.splitext(path_img)
     if len(ext) > 6:
         x = dcmread(path_img).pixel_array.astype(np.float32)/255
+        h, w  = x.shape 
+        minimum = np.minimum(h, w)
+        maximum = np.maximum(h, w)
+
+        margin = int((maximum - minimum)/2)
+        if h > w:
+            x = x[margin:(h-margin),:]
+        if h < w:
+            x = x[:,margin:(w-margin)]
+        x = x[:minimum, :minimum]
         # print(x.shape)
-        # x = np.resize(x, (1000,800))
-        # print(x.shape)
+        x = resize(x, (1000,1000))
         x = np.dstack((x,x,x))
         x = np.transpose(x, (2,0,1))
-
  
     return x
         

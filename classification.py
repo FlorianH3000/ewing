@@ -261,11 +261,11 @@ if __name__ == "__main__":
             dice_train += ut.dice_score(target_t.cpu().numpy(),pred_t.cpu().numpy())        
         
             # ## visualize training images
-            # if batch_idx < 5:    
-                # img = data_t.cpu().numpy()
-                # plt.figure(dpi=200)
-                # plt.axis('off') 
-                # plt.imshow(img[0,0,:,:], cmap='bone')
+            # if batch_idx < 10:    
+            #     img = data_t.cpu().numpy()
+            #     plt.figure(dpi=200)
+            #     plt.axis('off') 
+            #     plt.imshow(img[0,0,:,:], cmap='bone')
             #     plt.imsave(r'\\nas.ads.mwn.de\ga87qis\Desktop\code\ewing vs om\results\test{}.png'.format(batch_idx), img[0,2,:,:], dpi=500, cmap='bone')
         
         
