@@ -16,7 +16,7 @@ parser.add_argument('--lr',
         type=float, default=0.00001)
 
 parser.add_argument('--epx',
-        type=int, default=20)
+        type=int, default=5)
 
 parser.add_argument('--batch_size',
         type=int, default=2)
@@ -26,18 +26,18 @@ parser.add_argument('--seed',
         type=int, default=1)
 
 """ specifies the cross validation state, None for random """
-parser.add_argument('--cv_state',
-        type=int, default=1)
+parser.add_argument('--cv_splits',
+        type=int, default=3)
 
 """ train split """
 parser.add_argument('--train_split',
-        type=int, default=0.9)
+        type=int, default=0.7)
 """ val split """
 parser.add_argument('--val_split',
         type=int, default=0.2)
 """ test split """
 parser.add_argument('--test_split',
-        type=int, default=0.1)
+        type=int, default=0.3)
 
 
 parser.add_argument('--augmentation',
@@ -79,7 +79,7 @@ parser.add_argument('--data_dir_test',
         type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'test'))
 
 
-input_size = 1000
+input_size = 25
 
 args = parser.parse_args()
 args = vars(args)

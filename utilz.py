@@ -45,7 +45,7 @@ def load_img(path_img):
             x = x[:,margin:(w-margin)]
         x = x[:minimum, :minimum]
         # print(x.shape)
-        x = resize(x, (1000,1000))
+        x = resize(x, (25,25))
         x = np.dstack((x,x,x))
         x = np.transpose(x, (2,0,1))
  
