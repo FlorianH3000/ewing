@@ -16,10 +16,10 @@ parser.add_argument('--lr',
         type=float, default=0.00001)
 
 parser.add_argument('--epx',
-        type=int, default=5)
+        type=int, default=1000)
 
 parser.add_argument('--batch_size',
-        type=int, default=2)
+        type=int, default=128)
 
 """ seed specifies the way the list is shuffled before split for cross validation, defines test data """
 parser.add_argument('--seed',
@@ -27,17 +27,17 @@ parser.add_argument('--seed',
 
 """ specifies the cross validation state, None for random """
 parser.add_argument('--cv_splits',
-        type=int, default=3)
+        type=int, default=4)
 
 """ train split """
 parser.add_argument('--train_split',
-        type=int, default=0.7)
-""" val split """
-parser.add_argument('--val_split',
-        type=int, default=0.2)
+        type=int, default=0.9)
+# """ val split """
+# parser.add_argument('--val_split',
+#         type=int, default=0.2)
 """ test split """
 parser.add_argument('--test_split',
-        type=int, default=0.3)
+        type=int, default=0.1)
 
 
 parser.add_argument('--augmentation',
@@ -57,7 +57,7 @@ parser.add_argument('--feature_extract',
 
 
 parser.add_argument('--model_name',
-        type=str, default='resnet50') 
+        type=str, default='resnet152') 
 
 
 
@@ -79,7 +79,7 @@ parser.add_argument('--data_dir_test',
         type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'test'))
 
 
-input_size = 25
+input_size = 1200
 
 args = parser.parse_args()
 args = vars(args)
