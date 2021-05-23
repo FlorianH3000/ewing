@@ -1,8 +1,5 @@
-   
-    
 """
 Classification cv stratified
-
 """
 import torch
 from torchvision import transforms
@@ -33,36 +30,9 @@ else:
 ###ImageNet values for ResNet, VGG, ...
 norm_mean = [0.485, 0.456, 0.406]
 norm_std = [0.229, 0.224, 0.225]
-if args['augmentation'] == True:
+# if args['augmentation'] == True:
 ################### dataloader  ###################
-    transf_train = transforms.Compose([
-        # transforms.Resize(input_size),
-        #                                 transforms.CenterCrop((input_size, input_size)),
-        #                                 transforms.ToTensor(),
-        #                                 transforms.ToPILImage(),
-        #                                 #transforms.RandomRotation(2),
-        #                                 transforms.RandomHorizontalFlip(p=0.5),
-        #                                 #transforms.RandomVerticalFlip(p=0.5),
-        #                                 #transforms.RandomPerspective(distortion_scale=0.1, p=0.5, interpolation=2, fill=0),
-        #                                 #transforms.ColorJitter(brightness=0.1, contrast=0.2, saturation=0.2, hue=0.2),
-        #                                # transforms.RandomCrop(input_size*0.95),
-        #                                 transforms.ToTensor(),
-        #                                 transforms.Normalize(norm_mean, norm_std),                               
-                                        ])
-else:
-    transf_train = transforms.Compose([
-        # transforms.Resize(input_size),
-        #                         transforms.CenterCrop((input_size, input_size)),                               
-        #                         transforms.ToTensor(),
-        #                         transforms.Normalize(norm_mean, norm_std),                               
-                                ])
-
-transf_val = transforms.Compose([transforms.Resize(input_size),
-                                    transforms.CenterCrop((input_size, input_size)),                                    
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(norm_mean, norm_std),                                
-                                    ])
-
+    
 
 
 
@@ -139,11 +109,11 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         # torch.set_num_threads(2)
 
         
-        train_data = ImgDataset(img_list1, labels_list1, transf_train)
-        val_data = ImgDataset(img_v_list1, labels_v_list1, transf_val)
+        train_data = ImgDataset(img_list1, labels_list1, 'train')
+        val_data = ImgDataset(img_v_list1, labels_v_list1, 'val')
         
-        train_loader = torch.utils.data.DataLoader(train_data, batch_size=args['batch_size'], shuffle=True, num_workers=10)
-        val_loader = torch.utils.data.DataLoader(val_data, batch_size=args['batch_size'], shuffle=True, num_workers=10)
+        train_loader = torch.utils.data.DataLoader(train_data, batch_size=args['batch_size'], shuffle=True, num_workers=0)
+        val_loader = torch.utils.data.DataLoader(val_data, batch_size=args['batch_size'], shuffle=True, num_workers=0)
 
         
         
@@ -219,6 +189,8 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         total_step_train = len(train_loader)
         total_step_val = len(val_loader)
         
+        
+            
         for epoch in range(1, args['epx']+1):
             running_loss = 0.0
             correct_t = 0
@@ -228,104 +200,121 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             print(f'Epoch {epoch}')
             
             
-            for batch_idx, d in enumerate(train_loader):
-                data_t, target_t = d['img'].to(device), d['lab'].to(device)
+# =============================================================================
+#  early stopping (10)
+# =============================================================================
+            if epoch > 20 and val_loss[-10] <= val_loss[-9] <= val_loss[-8] <= val_loss[-7] <= val_loss[-6] <= val_loss[-5] <= val_loss[-4] <= val_loss[-3]<= val_loss[-2] <= val_loss[-1]:
+            #if epoch > 5 and val_loss[-5] <= val_loss[-4] <= val_loss[-3]<= val_loss[-2] <= val_loss[-1]:
+                print('early stopping!!!')
+                epoch = args['epx'] + 1
+                # epochs_count = epochs_count[:-1]
                 
-                ### zero the parameter gradients
-                optimizer.zero_grad()
-                ### forward + backward + optimize
+    ### proceed as usual    
+            else: 
                 
-                # print('data_t.shape: ', data_t.shape)
-                # print(model)
-                outputs_t = model(data_t)
-                # print('outputs_t: ', outputs_t)
-                
-                loss_t = criterion(outputs_t, target_t.long())
-                
-                loss_t.backward()
-                optimizer.step()
-                ### print statistics
-                running_loss += loss_t.item()
-                _,pred_t = torch.max(outputs_t, dim=1)
-                # print('pred_t: ', pred_t)
-                # print('target_t: ',target_t )
-                correct_t += torch.sum(pred_t==target_t).item()
-                total_t += target_t.size(0)
+                for batch_idx, d in enumerate(train_loader):
+                    data_t, target_t = d['img'].to(device), d['lab'].to(device)
                     
-                ### train dice score, acc
-                dice_train += ut.dice_score(target_t.cpu().numpy(),pred_t.cpu().numpy())        
+                    ### zero the parameter gradients
+                    optimizer.zero_grad()
+                    ### forward + backward + optimize
+                    
+                    # print('data_t.shape: ', data_t.shape)
+                    # print(model)
+                    outputs_t = model(data_t)
+                    # print('outputs_t: ', outputs_t)
+                    
+                    loss_t = criterion(outputs_t, target_t.long())
+                    
+                    loss_t.backward()
+                    optimizer.step()
+                    ### print statistics
+                    running_loss += loss_t.item()
+                    _,pred_t = torch.max(outputs_t, dim=1)
+                    # print('pred_t: ', pred_t)
+                    # print('target_t: ',target_t )
+                    correct_t += torch.sum(pred_t==target_t).item()
+                    total_t += target_t.size(0)
+                        
+                    ### train dice score, acc
+                    dice_train += ut.dice_score(target_t.cpu().numpy(),pred_t.cpu().numpy())        
+                
+                    # # # visualize training images
+                    # if batch_idx < 20:    
+                    #     img = data_t.cpu().numpy()
+                    #     plt.figure(dpi=600)
+                    #     plt.axis('off') 
+                    #     plt.imshow(img[0,1,:,:], cmap='gray')
+                    #     plt.savefig(os.path.join(new_dir, 'loss' + str(batch_idx)))
+                
+                
+                train_dice_score.append(dice_train / total_step_train)  
+                train_acc.append(100 * correct_t / total_t)
+                train_loss.append(running_loss / total_step_train)
+                print(f'\ntrain loss: {(train_loss[-1]):.4f}, train acc: {(train_acc[-1]):.4f}, train dice: {(train_dice_score[-1]):.4f}')
+                
+                ################ validation ###################
+                batch_loss = 0
+                total_v=0
+                correct_v=0
+                with torch.no_grad():
+     
+                    model.eval()
+                    for d in (val_loader):
+                        data_v, target_v = d['img'].to(device), d['lab'].to(device)
+                        outputs_v = model(data_v)
+                        
+                        
+                        loss_v = criterion(outputs_v, target_v.long())
+                        batch_loss += loss_v.item()
+                        _,pred_v = torch.max(outputs_v, dim=1)
+                        # print('target_v: ', target_v)
+                        # print("pred_v:   ", pred_v)
+                        correct_v += torch.sum(pred_v==target_v).item()
+                        total_v += target_v.size(0) 
+                       
+                        
+                        ### visualize validation images   
+                        # img = data_v.cpu().numpy()
+                        # plt.figure()
+                        # plt.axis('off') 
+                        # plt.imshow(img[0,0,:,:])
+                        
+                    ### val dice score
+                        #metric_val = lo.DiceLoss()
+                        #dice_val += 1 - metric_val(outputs, target_v).item()
+                        # dice_val += ut.dice_score(target_v.cpu().numpy(), pred_v.cpu().numpy())
+                    
+                        # cm = confusion_matrix(target_v.cpu().numpy(), pred_v.cpu().numpy())
+                        # #cm_display = ConfusionMatrixDisplay(cm).plot(cmap='Blues')
+                        # tn = cm[0,0]
+                        # tp = cm[1,1]
+                        # fp = cm[0,1]
+                        # fn = cm[1,0]
             
-                # # visualize training images
-                # if batch_idx < 5:    
-                #     img = data_t.cpu().numpy()
-                #     plt.figure(dpi=600)
-                #     plt.axis('off') 
-                #     plt.imshow(img[0,1,:,:], cmap='gray')
+    
+                    
+                    # val_dice_score.append(dice_val / total_step_val)    
+                    # val_sens.append(sensitivity_val / total_step_val) 
+                    # val_spec.append(specificity_val / total_step_val) 
+                    val_acc.append(100 * correct_v / total_v)
+                    val_loss.append(batch_loss / total_step_val)
+                    
             
+                    
+                    network_learned = batch_loss < valid_loss_min        
+                    #print(f'validation loss: {(val_loss[-1]):.4f}, validation acc: {(val_acc[-1]):.4f}, validation dice: {(val_dice_score[-1]):.4f}\n')
+                    print(f'validation loss: {(val_loss[-1]):.4f}, validation acc: {(val_acc[-1]):.4f}')
+                    # Saving the best weight 
+                    if network_learned:
+                        valid_loss_min = batch_loss
+                        torch.save(model.state_dict(), 'models/{}_model_classification_trained.pt'.format(cv_counter))
             
-            train_dice_score.append(dice_train / total_step_train)  
-            train_acc.append(100 * correct_t / total_t)
-            train_loss.append(running_loss / total_step_train)
-            print(f'\ntrain loss: {(train_loss[-1]):.4f}, train acc: {(train_acc[-1]):.4f}, train dice: {(train_dice_score[-1]):.4f}')
-            
-            ################ validation ###################
-            batch_loss = 0
-            total_v=0
-            correct_v=0
-            with torch.no_grad():
- 
-                model.eval()
-                for d in (val_loader):
-                    data_v, target_v = d['img'].to(device), d['lab'].to(device)
-                    outputs_v = model(data_v)
-                    
-                    
-                    loss_v = criterion(outputs_v, target_v.long())
-                    batch_loss += loss_v.item()
-                    _,pred_v = torch.max(outputs_v, dim=1)
-                    # print('target_v: ', target_v)
-                    # print("pred_v:   ", pred_v)
-                    correct_v += torch.sum(pred_v==target_v).item()
-                    total_v += target_v.size(0) 
-                   
-                    
-                    ### visualize validation images   
-                    # img = data_v.cpu().numpy()
-                    # plt.figure()
-                    # plt.axis('off') 
-                    # plt.imshow(img[0,0,:,:])
-                    
-                ### val dice score
-                    #metric_val = lo.DiceLoss()
-                    #dice_val += 1 - metric_val(outputs, target_v).item()
-                    # dice_val += ut.dice_score(target_v.cpu().numpy(), pred_v.cpu().numpy())
-                
-                    # cm = confusion_matrix(target_v.cpu().numpy(), pred_v.cpu().numpy())
-                    # #cm_display = ConfusionMatrixDisplay(cm).plot(cmap='Blues')
-                    # tn = cm[0,0]
-                    # tp = cm[1,1]
-                    # fp = cm[0,1]
-                    # fn = cm[1,0]
+                model.train()
         
-
-                
-                # val_dice_score.append(dice_val / total_step_val)    
-                # val_sens.append(sensitivity_val / total_step_val) 
-                # val_spec.append(specificity_val / total_step_val) 
-                val_acc.append(100 * correct_v / total_v)
-                val_loss.append(batch_loss / total_step_val)
-                
         
-                
-                network_learned = batch_loss < valid_loss_min        
-                #print(f'validation loss: {(val_loss[-1]):.4f}, validation acc: {(val_acc[-1]):.4f}, validation dice: {(val_dice_score[-1]):.4f}\n')
-                print(f'validation loss: {(val_loss[-1]):.4f}, validation acc: {(val_acc[-1]):.4f}')
-                # Saving the best weight 
-                if network_learned:
-                    valid_loss_min = batch_loss
-                    torch.save(model.state_dict(), 'models/{}_model_classification_trained.pt'.format(cv_counter))
         
-            model.train()
+        
         torch.cuda.empty_cache()
                 
         print('best validation loss: ', round(min(val_loss), 2))
@@ -352,15 +341,6 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         plt.legend(loc='best')
         plt.savefig(os.path.join(new_dir, 'accuracy'))
         
-        ################### dice score ###################
-        # fig = plt.figure(figsize=(20,10))
-        # plt.title("Dice score")
-        # plt.plot(train_dice_score, label='train', linestyle='dashed',  color='c')
-        # plt.plot(val_dice_score, label='validation', linestyle='dashed', color='m')
-        # plt.xlabel('num_epochs', fontsize=12)
-        # plt.ylabel('dice score', fontsize=12)
-        # plt.legend(loc='best')
-        # plt.savefig(os.path.join(new_dir, 'dice'))
         
         print('------------------------ cv split done ------------------------')
         
@@ -384,5 +364,3 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 df = pd.DataFrame(data=args, index=[0])
 df = (df.T)
 df.to_excel('results/dict1.xlsx')
-
-

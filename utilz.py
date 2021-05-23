@@ -4,24 +4,22 @@ utilz
 
 import numpy as np
 from sklearn.metrics import f1_score
-from PIL import Image
 import os
 import torch
-from scipy.ndimage.interpolation import map_coordinates
-from scipy import interpolate as ipol
 import random
 from torchvision import models
 import torch.nn as nn
 from pydicom import dcmread
 import matplotlib.pyplot as plt
-from skimage.transform import rescale, resize
+from skimage.transform import resize
+from arguments import input_size
 
 #########################################################################
-def img_display(img):
-    img = img / 2 + 0.5     # unnormalize
-    npimg = img.numpy()
-    npimg = np.transpose(npimg, (1, 2, 0))
-    return npimg
+# def img_display(img):
+#     img = img / 2 + 0.5     # unnormalize
+#     npimg = img.numpy()
+#     npimg = np.transpose(npimg, (1, 2, 0))
+#     return npimg
 
 
 def dice_score(label, pred):    
@@ -34,21 +32,7 @@ def load_img(path_img):
     _, ext = os.path.splitext(path_img)
     if len(ext) > 6:
         x = dcmread(path_img).pixel_array.astype(np.float32)/255
-        h, w  = x.shape 
-        minimum = np.minimum(h, w)
-        maximum = np.maximum(h, w)
 
-        margin = int((maximum - minimum)/2)
-        if h > w:
-            x = x[margin:(h-margin),:]
-        if h < w:
-            x = x[:,margin:(w-margin)]
-        x = x[:minimum, :minimum]
-        # print(x.shape)
-        x = resize(x, (25,25))
-        x = np.dstack((x,x,x))
-        x = np.transpose(x, (2,0,1))
- 
     return x
         
 
@@ -94,7 +78,7 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
         set_parameter_requires_grad(model_ft, feature_extract)
         num_ftrs = model_ft.classifier[6].in_features
         model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
-       # input_size = 224
+        # input_size = 224
 
 
     elif model_name == "densenet121":
@@ -111,7 +95,6 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
         """
         model_ft = torch.hub.load('pytorch/vision:v0.6.0', 'vgg11_bn', pretrained=True)
         model_ft.classifier[6] = nn.Linear(4096,num_classes)
-        print(model_ft)  
    
     elif model_name == "vgg13":
         """ VGG13_bn
@@ -126,8 +109,6 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
         model_ft = torch.hub.load('pytorch/vision:v0.6.0', 'vgg19_bn', pretrained=True)
         model_ft.classifier[6] = nn.Linear(4096,num_classes)
 
-    else:
-        print("Invalid model name, exiting...")
 
     return model_ft
 
@@ -140,3 +121,60 @@ def set_parameter_requires_grad(model, feature_extracting):
 
 
     
+
+
+# =============================================================================
+# TRANSFORM
+# =============================================================================
+
+def transforms(img, phase):
+    
+    ### normalizing
+    img = np.nan_to_num(img)
+    img = img - img.mean()
+    img = img / img.max()
+    img = np.nan_to_num(img)
+           
+    # if phase == 'train':
+        
+    #     ###horizontal_flip
+    #     if 0.5 > random.random():
+    #         img = np.copy(np.flip(img, axis=1))
+        
+    #     #vertical_flip
+    #     if 0 > random.random():
+    #         img = np.copy(np.flip(img, axis=0))
+         
+    #     ### random_crop
+    #     if 0.5 > random.random():
+    #         h, w  = img.shape 
+    #         minimum = np.minimum(h, w)
+    #         margin = int(minimum*0.2)
+    #         margin_final = int(random.randint(0, margin)/2)
+    #         img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
+
+
+        
+    ### validation and test only
+    h, w  = img.shape 
+    minimum = np.minimum(h, w)
+    maximum = np.maximum(h, w)
+
+    margin = int((maximum - minimum)/2)
+    if h > w:
+        img = img[margin:(h-margin),:]
+    if h < w:
+        img = img[:,margin:(w-margin)]
+    img = img[:minimum, :minimum]
+    img = resize(img, (input_size,input_size))
+    img = np.dstack((img,img,img))
+    img = np.transpose(img, (2,0,1))    
+    img = torch.from_numpy(img)
+    
+    # print(img.shape)
+    # plt.figure()
+    # plt.imshow(img[0,:,:])
+   
+    return img
+
+

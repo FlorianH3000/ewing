@@ -4,18 +4,18 @@ ImgDataset
 
 from torch.utils.data import Dataset
 import os
-from utilz import load_img
+import utilz as ut
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class ImgDataset(Dataset):
 
-    def __init__(self, img, lab, transf):
+    def __init__(self, img, lab, phase):
 
         self.img = img
         self.lab = lab
-        self.transf = transf
+        self.phase = phase
 
 
     def __len__(self):
@@ -23,12 +23,11 @@ class ImgDataset(Dataset):
     
     def __getitem__(self, idx):
      
-        img = load_img(self.img[idx])
+        img = ut.load_img(self.img[idx])
+        img = ut.transforms(img, self.phase)
 
         lab = self.lab[idx]
-        
-        # img = self.transf(img)
-        
+
         sample = {'img': img, 'lab': lab}      
         
         return sample
