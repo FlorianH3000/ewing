@@ -27,14 +27,6 @@ if not os.path.exists(new_dir):
 else:
     print('Directory ', new_dir, 'already exists!')
 
-###ImageNet values for ResNet, VGG, ...
-norm_mean = [0.485, 0.456, 0.406]
-norm_std = [0.229, 0.224, 0.225]
-# if args['augmentation'] == True:
-################### dataloader  ###################
-    
-
-
 
 file_paths = list()
 labels_list0 = list()
@@ -103,10 +95,6 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             print('number of files for training: ', len(img_list1))
             print('number of files for validation: ', len(img_v_list1))
             print('number of files for testing: ', len(img_test_list1))
-        
-        
-        # ### custom dataloader
-        # torch.set_num_threads(2)
 
         
         train_data = ImgDataset(img_list1, labels_list1, 'train')
@@ -124,6 +112,11 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         # Initialize the model for this run
         model = ut.initialize_model(args['model_name'], num_classes, args['feature_extract'], use_pretrained=True)
         
+        ### pretrained model
+        # model_path = r'\\nas.ads.mwn.de\ga87qis\Desktop\code\ewing vs om\models\1_model_classification_trained.pt'
+        # model_arch = 'resnet18'
+        # model = ut.load_pretrained_model(model_arch, model_path, 2, args['feature_extract'])
+        
         params_to_update = model.parameters()
         #print("Params to learn:")
         if args['feature_extract']:
@@ -137,6 +130,8 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                 if param.requires_grad == True:
                     print("\t",name)
         
+        
+
         
         
         # =============================================================================
@@ -184,8 +179,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         val_acc = []
         train_loss = []
         train_acc = []
-        train_dice_score = [] 
-        val_dice_score, val_sens, val_spec, acc2_val = [],[],[],[]
+        val_sens, val_spec, acc2_val = [],[],[]
         total_step_train = len(train_loader)
         total_step_val = len(val_loader)
         
@@ -195,13 +189,13 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             running_loss = 0.0
             correct_t = 0
             total_t = 0
-            dice_train, dice_val, sensitivity_val, specificity_val = 0,0,0,0
+            sensitivity_val, specificity_val = 0,0
             print('----------------------------------')
             print(f'Epoch {epoch}')
             
             
 # =============================================================================
-#  early stopping (10)
+#  early stopping (20)
 # =============================================================================
             if epoch > 20 and val_loss[-10] <= val_loss[-9] <= val_loss[-8] <= val_loss[-7] <= val_loss[-6] <= val_loss[-5] <= val_loss[-4] <= val_loss[-3]<= val_loss[-2] <= val_loss[-1]:
             #if epoch > 5 and val_loss[-5] <= val_loss[-4] <= val_loss[-3]<= val_loss[-2] <= val_loss[-1]:
@@ -219,8 +213,6 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                     optimizer.zero_grad()
                     ### forward + backward + optimize
                     
-                    # print('data_t.shape: ', data_t.shape)
-                    # print(model)
                     outputs_t = model(data_t)
                     # print('outputs_t: ', outputs_t)
                     
@@ -236,9 +228,6 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                     correct_t += torch.sum(pred_t==target_t).item()
                     total_t += target_t.size(0)
                         
-                    ### train dice score, acc
-                    dice_train += ut.dice_score(target_t.cpu().numpy(),pred_t.cpu().numpy())        
-                
                     # # # visualize training images
                     # if batch_idx < 20:    
                     #     img = data_t.cpu().numpy()
@@ -248,10 +237,9 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                     #     plt.savefig(os.path.join(new_dir, 'loss' + str(batch_idx)))
                 
                 
-                train_dice_score.append(dice_train / total_step_train)  
                 train_acc.append(100 * correct_t / total_t)
                 train_loss.append(running_loss / total_step_train)
-                print(f'\ntrain loss: {(train_loss[-1]):.4f}, train acc: {(train_acc[-1]):.4f}, train dice: {(train_dice_score[-1]):.4f}')
+                print(f'\ntrain loss: {(train_loss[-1]):.4f}, train acc: {(train_acc[-1]):.4f}')
                 
                 ################ validation ###################
                 batch_loss = 0
@@ -280,30 +268,13 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                         # plt.axis('off') 
                         # plt.imshow(img[0,0,:,:])
                         
-                    ### val dice score
-                        #metric_val = lo.DiceLoss()
-                        #dice_val += 1 - metric_val(outputs, target_v).item()
-                        # dice_val += ut.dice_score(target_v.cpu().numpy(), pred_v.cpu().numpy())
-                    
-                        # cm = confusion_matrix(target_v.cpu().numpy(), pred_v.cpu().numpy())
-                        # #cm_display = ConfusionMatrixDisplay(cm).plot(cmap='Blues')
-                        # tn = cm[0,0]
-                        # tp = cm[1,1]
-                        # fp = cm[0,1]
-                        # fn = cm[1,0]
             
-    
-                    
-                    # val_dice_score.append(dice_val / total_step_val)    
-                    # val_sens.append(sensitivity_val / total_step_val) 
-                    # val_spec.append(specificity_val / total_step_val) 
                     val_acc.append(100 * correct_v / total_v)
                     val_loss.append(batch_loss / total_step_val)
                     
             
                     
                     network_learned = batch_loss < valid_loss_min        
-                    #print(f'validation loss: {(val_loss[-1]):.4f}, validation acc: {(val_acc[-1]):.4f}, validation dice: {(val_dice_score[-1]):.4f}\n')
                     print(f'validation loss: {(val_loss[-1]):.4f}, validation acc: {(val_acc[-1]):.4f}')
                     # Saving the best weight 
                     if network_learned:
@@ -311,8 +282,6 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                         torch.save(model.state_dict(), 'models/{}_model_classification_trained.pt'.format(cv_counter))
             
                 model.train()
-        
-        
         
         
         torch.cuda.empty_cache()

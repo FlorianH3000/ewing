@@ -40,7 +40,6 @@ def load_img(path_img):
 
 
 
-
 def initialize_model(model_name, num_classes, feature_extract, use_pretrained=True):
     # Initialize these variables which will be set in this if statement. Each of these
     #   variables is model specific.
@@ -54,6 +53,7 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
         set_parameter_requires_grad(model_ft, feature_extract)
         num_ftrs = model_ft.fc.in_features
         model_ft.fc = nn.Linear(num_ftrs, num_classes)
+
         
     if model_name == "resnet50":
         """ Resnet50
@@ -167,7 +167,7 @@ def transforms(img, phase):
         img = img[:,margin:(w-margin)]
     img = img[:minimum, :minimum]
     img = resize(img, (input_size,input_size))
-    img = np.dstack((img,img,img))
+    img = np.dstack((img,img, img))
     img = np.transpose(img, (2,0,1))    
     img = torch.from_numpy(img)
     
@@ -178,3 +178,19 @@ def transforms(img, phase):
     return img
 
 
+
+
+
+
+def load_pretrained_model(model_arch, model_path, num_classes, feature_extract):
+
+    if model_arch == 'resnet18':
+        model = models.resnet18(pretrained=True)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
+        model.load_state_dict(torch.load(model_path))
+        model.train()
+
+
+    return model

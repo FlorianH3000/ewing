@@ -16,7 +16,7 @@ parser.add_argument('--lr',
         type=float, default=0.00001)
 
 parser.add_argument('--epx',
-        type=int, default=3)
+        type=int, default=2)
 
 parser.add_argument('--batch_size',
         type=int, default=2)
@@ -79,7 +79,7 @@ parser.add_argument('--data_dir_test',
         type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'test'))
 
 
-input_size = 4
+input_size = 100
 
 args = parser.parse_args()
 args = vars(args)
