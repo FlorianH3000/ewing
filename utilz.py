@@ -3,7 +3,6 @@ utilz
 """
 
 import numpy as np
-from sklearn.metrics import f1_score
 import os
 import torch
 import random
@@ -12,105 +11,93 @@ import torch.nn as nn
 from pydicom import dcmread
 import matplotlib.pyplot as plt
 from skimage.transform import resize
-from arguments import input_size
+from arguments import input_size, args
 
 #########################################################################
-# def img_display(img):
-#     img = img / 2 + 0.5     # unnormalize
-#     npimg = img.numpy()
-#     npimg = np.transpose(npimg, (1, 2, 0))
-#     return npimg
-
-
-def dice_score(label, pred):    
-    x = f1_score(label, pred, average='weighted')
-    return x
-
-
 
 def load_img(path_img):
     _, ext = os.path.splitext(path_img)
-    if len(ext) > 6:
+    print(ext)
+    # if len(ext) > 6:
+    if 1 == 1:
         x = dcmread(path_img).pixel_array.astype(np.float32)/255
 
     return x
         
 
+      
+def calculate_sensitivity_specificity(y_test, y_pred_test, num_classes):
+    true_pos, false_pos, true_neg, false_neg, acc = 0,0,0,0,0
+    for (l,p) in zip(y_test, y_pred_test): 
         
+        for (l_, p_) in zip(l, p):
+            if l_ == p_ == 1:
+                true_pos += 1
+            if l_ == 0 and p_ == 1:
+                false_pos += 1
+            if l_ == p_ == 0:
+                true_neg += 1
+            if l_ == 1 and p_ == 0:
+                false_neg += 1
+            if l_ == p_:
+                acc += 1
+            
+    if num_classes > 2:
+        accuracy = acc / len(y_pred_test)
+        return 0, 0, accuracy
+        
+    else:
+        # Calculate accuracy
+        accuracy = acc / (len(y_pred_test) * args['batch_size'])
+        # Calculate sensitivity and specificity
+        sensitivity = true_pos / (true_pos + false_neg)
+        specificity = true_neg / (true_neg + false_pos)
+        
+        return sensitivity, specificity, accuracy  
+
 
 
 
 def initialize_model(model_name, num_classes, feature_extract, use_pretrained=True):
-    # Initialize these variables which will be set in this if statement. Each of these
-    #   variables is model specific.
-    model_ft = None
-    input_size = 0
 
     if model_name == "resnet18":
         """ Resnet18
         """
-        model_ft = models.resnet18(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+        model = models.resnet18(pretrained=use_pretrained)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
 
         
-    if model_name == "resnet50":
-        """ Resnet50
-        """
-        model_ft = models.resnet50(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    elif model_name == "resnet50":
+        model = models.resnet50(pretrained=use_pretrained)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
         
-    if model_name == "resnet152":
-        """ Resnet152
-        """
-        model_ft = models.resnet152(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    elif model_name == "resnet152":
+        model = models.resnet152(pretrained=use_pretrained)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
         
     elif model_name == "alexnet":
-        """ Alexnet
-        """
-        model_ft = models.alexnet(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.classifier[6].in_features
-        model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
-        # input_size = 224
-
-
+        model = models.alexnet(pretrained=use_pretrained)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.classifier[6].in_features
+        model.classifier[6] = nn.Linear(num_ftrs,num_classes)
+        
     elif model_name == "densenet121":
-        """ Densenet
-        """
-        model_ft = models.densenet121(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.classifier.in_features
-        model_ft.classifier = nn.Linear(num_ftrs, num_classes)
-   
+        model = models.densenet121(pretrained=use_pretrained)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.classifier.in_features
+        model.classifier = nn.Linear(num_ftrs, num_classes)
    
     elif model_name == "vgg11":
-        """ VGG11_bn
-        """
-        model_ft = torch.hub.load('pytorch/vision:v0.6.0', 'vgg11_bn', pretrained=True)
-        model_ft.classifier[6] = nn.Linear(4096,num_classes)
+        model = torch.hub.load('pytorch/vision:v0.6.0', 'vgg11_bn', pretrained=True)
+        model.classifier[6] = nn.Linear(4096,num_classes)
    
-    elif model_name == "vgg13":
-        """ VGG13_bn
-        """
-        model_ft = torch.hub.load('pytorch/vision:v0.6.0', 'vgg13_bn', pretrained=True)
-        model_ft.classifier[6] = nn.Linear(4096,num_classes)
-
-
-    elif model_name == "vgg19":
-        """ VGG19_bn
-        """
-        model_ft = torch.hub.load('pytorch/vision:v0.6.0', 'vgg19_bn', pretrained=True)
-        model_ft.classifier[6] = nn.Linear(4096,num_classes)
-
-
-    return model_ft
+    return model
 
 
 
@@ -127,35 +114,14 @@ def set_parameter_requires_grad(model, feature_extracting):
 # TRANSFORM
 # =============================================================================
 
-def transforms(img, phase):
+def adjust_img(img, phase):
     
-    ### normalizing
+    ### normalizing according to current data
     img = np.nan_to_num(img)
     img = img - img.mean()
     img = img / img.max()
     img = np.nan_to_num(img)
-           
-    # if phase == 'train':
-        
-    #     ###horizontal_flip
-    #     if 0.5 > random.random():
-    #         img = np.copy(np.flip(img, axis=1))
-        
-    #     #vertical_flip
-    #     if 0 > random.random():
-    #         img = np.copy(np.flip(img, axis=0))
-         
-    #     ### random_crop
-    #     if 0.5 > random.random():
-    #         h, w  = img.shape 
-    #         minimum = np.minimum(h, w)
-    #         margin = int(minimum*0.2)
-    #         margin_final = int(random.randint(0, margin)/2)
-    #         img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
 
-
-        
-    ### validation and test only
     h, w  = img.shape 
     minimum = np.minimum(h, w)
     maximum = np.maximum(h, w)
