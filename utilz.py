@@ -12,17 +12,18 @@ from pydicom import dcmread
 import matplotlib.pyplot as plt
 from skimage.transform import resize
 from arguments import input_size, args
+from scipy import ndimage
 
 #########################################################################
 
-def load_img(path_img):
-    _, ext = os.path.splitext(path_img)
-    print(ext)
-    # if len(ext) > 6:
-    if 1 == 1:
-        x = dcmread(path_img).pixel_array.astype(np.float32)/255
-
-    return x
+# def load_img(path_img):
+#     _, ext = os.path.splitext(path_img)
+#     print(ext)
+#     # if len(ext) > 6:
+#     # if 1 == 1:
+#     #     x = dcmread(path_img).pixel_array.astype(np.float32)/255
+# # 
+#     return x
         
 
       
@@ -69,13 +70,13 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
         model.fc = nn.Linear(num_ftrs, num_classes)
 
         
-    elif model_name == "resnet50":
+    if model_name == "resnet50":
         model = models.resnet50(pretrained=use_pretrained)
         set_parameter_requires_grad(model, feature_extract)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_classes)
         
-    elif model_name == "resnet152":
+    if model_name == "resnet152":
         model = models.resnet152(pretrained=use_pretrained)
         set_parameter_requires_grad(model, feature_extract)
         num_ftrs = model.fc.in_features
@@ -121,8 +122,33 @@ def adjust_img(img, phase):
     img = img - img.mean()
     img = img / img.max()
     img = np.nan_to_num(img)
+    
+    # if phase == 'train':
+        
+    #     ##horizontal_flip
+    #     if 0.5 > random.random():
+    #         img = np.copy(np.flip(img, axis=1))
+        
+    #     #vertical_flip
+    #     # if 0 > random.random():
+    #     #     img = np.copy(np.flip(img, axis=0))
 
-    h, w  = img.shape 
+    #     ## random_crop
+    #     if 0.5 > random.random():
+    #         h, w, _  = img.shape 
+    #         minimum = np.minimum(h, w)
+    #         margin = int(minimum*0.1)
+    #         margin_final = int(random.randint(0, margin)/2)
+    #         img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
+
+    #     if 0.5 > random.random():
+    #         x = random.randint(-25, 25)
+    #         img = ndimage.rotate(img, x, reshape=False)
+    
+    
+    
+    
+    h, w, _  = img.shape 
     minimum = np.minimum(h, w)
     maximum = np.maximum(h, w)
 
@@ -133,7 +159,7 @@ def adjust_img(img, phase):
         img = img[:,margin:(w-margin)]
     img = img[:minimum, :minimum]
     img = resize(img, (input_size,input_size))
-    img = np.dstack((img,img, img))
+    # img = np.dstack((img,img, img))
     img = np.transpose(img, (2,0,1))    
     img = torch.from_numpy(img)
     

@@ -7,7 +7,7 @@ import os
 import utilz as ut
 import matplotlib.pyplot as plt
 import numpy as np
-
+import cv2
 
 class ImgDataset(Dataset):
 
@@ -24,8 +24,9 @@ class ImgDataset(Dataset):
     
     def __getitem__(self, idx):
      
-        img = ut.load_img(self.img[idx])
-        img = ut.adjust_img(img, self.phase)
+        # img = plt.imread(self.img[idx])
+        img = cv2.imread(self.img[idx])
+        img = ut.adjust_img(img, self.phase).float()
         img = self.transf(img)
 
         

@@ -16,18 +16,18 @@ parser.add_argument('--lr',
         type=float, default=0.0001)
 
 parser.add_argument('--epx',
-        type=int, default=1)
+        type=int, default=500)
 
 parser.add_argument('--batch_size',
-        type=int, default=2)
+        type=int, default=256)
 
 """ seed specifies the way the list is shuffled before split for cross validation, defines test data """
 parser.add_argument('--seed',
-        type=int, default=1)
+        type=int, default=3)
 
 """ specifies the cross validation state, None for random """
 parser.add_argument('--cv_splits',
-        type=int, default=5)
+        type=int, default=6)
 
 """ train split """
 parser.add_argument('--train_split',
@@ -41,11 +41,13 @@ parser.add_argument('--test_split',
 
 
 parser.add_argument('--augmentation',
-        type=bool, default=True)
+        type=bool, default=False)
 
 
+# parser.add_argument('--data',
+#         type=str, default='data') ###################
 parser.add_argument('--data',
-        type=str, default='data') ###################
+        type=str, default='/home/florianh/Desktop/data_f/ewing2/data_all_png_monochcleaned_selected_1/train') ###################
 
 
 # Gather the parameters to be optimized/updated in this run. If we are#  finetuning we will be updating all parameters. However, if we are
@@ -57,12 +59,9 @@ parser.add_argument('--feature_extract',
 
 
 parser.add_argument('--model_name',
-        type=str, default='resnet50') 
+        type=str, default='resnet152') 
 
 
-
-parser.add_argument('--data_dir_train',
-        type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'train'))
 
 
 classes = list()
@@ -71,15 +70,8 @@ for a in os.listdir(x):
     classes.append(a)
 num_classes = len(classes)
 
-parser.add_argument('--data_dir_val',
-        type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'val'))
 
-
-parser.add_argument('--data_dir_test',
-        type=str, default= os.path.join(os.getcwd(), parser.get_default('data'), 'test'))
-
-
-input_size = 30
+input_size = 500
 
 args = parser.parse_args()
 args = vars(args)
