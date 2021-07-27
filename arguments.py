@@ -16,7 +16,7 @@ parser.add_argument('--lr',
         type=float, default=0.0001)
 
 parser.add_argument('--epx',
-        type=int, default=500)
+        type=int, default=400)
 
 parser.add_argument('--batch_size',
         type=int, default=256)

@@ -18,7 +18,7 @@ from torchvision import transforms
 import torch
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 start_time = time.time()
 torch.backends.cudnn.benchmark = True
@@ -33,37 +33,6 @@ if not os.path.exists(new_dir):
 else:
     print('Directory ', new_dir, 'already exists!')
 
-# ImageNet values for ResNet, VGG, ...
-# norm_mean = [0.485, 0.456, 0.406]
-# norm_std = [0.229, 0.224, 0.225]
-if args['augmentation'] == True:
-    ################### dataloader  ###################
-
-    transf_train = transforms.Compose([
-        # transforms.ToTensor(),
-        transforms.ToPILImage(),
-        # transforms.RandomResizedCrop(input_size, scale=(0.9, 1.1), ratio=(0.9, 1.1)),
-        # transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomHorizontalFlip(p=0.5),
-        # transforms.ColorJitter(brightness=(0,0.1), contrast=(0,0.1), saturation=(0,0.1), hue=(-0.1,0.1)), ########### has to be tested!!!
-        # transforms.RandomAffine(10, translate=None, scale=[0.9, 1.1], shear=None), ########### has to be tested!!!
-        # transforms.Normalize(norm_mean, norm_std),
-        transforms.ToTensor(),
-    ])
-
-
-else:
-    transf_train = transforms.Compose([
-        # transforms.CenterCrop(input_size),
-        # transforms.ToTensor(),
-        # transforms.Normalize(norm_mean, norm_std),
-    ])
-
-transf_val = transforms.Compose([
-    # transforms.CenterCrop(input_size),
-    # transforms.ToTensor(),
-    # transforms.Normalize(norm_mean, norm_std),
-])
 
 
 file_paths = list()
@@ -355,6 +324,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         final_val_acc.append(max(val_acc))
         final_val_spec.append(max(val_spec))
         final_val_sens.append(max(val_sens))
+        print('cv_counter: ', cv_counter + '/' + args['cv_splits'])
         cv_counter += 1
 
         print()

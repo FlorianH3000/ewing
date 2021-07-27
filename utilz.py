@@ -123,27 +123,27 @@ def adjust_img(img, phase):
     img = img / img.max()
     img = np.nan_to_num(img)
     
-    # if phase == 'train':
+    if phase == 'train':
         
-    #     ##horizontal_flip
-    #     if 0.5 > random.random():
-    #         img = np.copy(np.flip(img, axis=1))
+        ##horizontal_flip
+        if 0.5 > random.random():
+            img = np.copy(np.flip(img, axis=1))
         
-    #     #vertical_flip
-    #     # if 0 > random.random():
-    #     #     img = np.copy(np.flip(img, axis=0))
+        ### vertical_flip
+        if 0 > random.random():
+            img = np.copy(np.flip(img, axis=0))
 
-    #     ## random_crop
-    #     if 0.5 > random.random():
-    #         h, w, _  = img.shape 
-    #         minimum = np.minimum(h, w)
-    #         margin = int(minimum*0.1)
-    #         margin_final = int(random.randint(0, margin)/2)
-    #         img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
+        ## random_crop
+        if 0.5 > random.random():
+            h, w, _  = img.shape 
+            minimum = np.minimum(h, w)
+            margin = int(minimum*0.1)
+            margin_final = int(random.randint(0, margin)/2)
+            img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
 
-    #     if 0.5 > random.random():
-    #         x = random.randint(-25, 25)
-    #         img = ndimage.rotate(img, x, reshape=False)
+        if 0.5 > random.random():
+            x = random.randint(-25, 25)
+            img = ndimage.rotate(img, x, reshape=False)
     
     
     

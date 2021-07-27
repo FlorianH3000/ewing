@@ -11,12 +11,11 @@ import cv2
 
 class ImgDataset(Dataset):
 
-    def __init__(self, img, lab, phase, transf):
+    def __init__(self, img, lab, phase):
 
         self.img = img
         self.lab = lab
         self.phase = phase
-        self.transf = transf
 
 
     def __len__(self):
@@ -24,11 +23,8 @@ class ImgDataset(Dataset):
     
     def __getitem__(self, idx):
      
-        # img = plt.imread(self.img[idx])
         img = cv2.imread(self.img[idx])
         img = ut.adjust_img(img, self.phase).float()
-        img = self.transf(img)
-
         
             
         lab = self.lab[idx]
