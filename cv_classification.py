@@ -3,30 +3,29 @@
 Classification cv stratified
 
 """
+import sys
+sys.stdout = open('console_output.txt', 'w')
+
 import json
-import random
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import time
-from arguments import args, num_classes, input_size, classes
+from arguments import args, num_classes, classes
 import torch.nn as nn
 from dataset import ImgDataset
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 import utilz as ut
-from torchvision import transforms
 import torch
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 start_time = time.time()
 torch.backends.cudnn.benchmark = True
 
 ################### directory for saving results ###################
-# new_dir = os.path.join(os.getcwd(), 'results/', str(args['lr']), str(args['epx']))
-new_dir = os.path.join(os.getcwd(
-), 'results/', str(round(random.random(), 5)) + str(round(random.random(), 5)))
+new_dir = os.path.join(os.getcwd(), 'results/', args['id'])
 if not os.path.exists(new_dir):
     os.makedirs(new_dir)
     print('Directory ', new_dir, 'created!')
@@ -34,11 +33,9 @@ else:
     print('Directory ', new_dir, 'already exists!')
 
 
-
 file_paths = list()
 labels_list_initial = list()
 img_val = list()
-# nativ_list = list()
 
 
 for x in os.listdir(args['data']):
@@ -62,6 +59,8 @@ skf.get_n_splits(pat_train_val, pat_label_train_val)
 final_val_acc = list()
 final_val_spec = list()
 final_val_sens = list()
+
+
 cv_counter = 1
 pat_train_val, pat_label_train_val = np.array(
     pat_train_val), np.array(pat_label_train_val)
@@ -80,23 +79,26 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 # train
     for img_path in img_train:
         for x in os.listdir(img_path):
-            img_train_list_final.append(os.path.join(img_path, x.decode()))
-            labels_train_list_final.append(
-                int(img_path.split("train/", 1)[1][0:1]))
+            if 'png' in x:
+                img_train_list_final.append(os.path.join(img_path, x))
+                labels_train_list_final.append(
+                    int(img_path.split('\\')[1][0:1]))
 
 # val
     for img_path in img_val:
         for x in os.listdir(img_path):
-            img_val_list_final.append(os.path.join(img_path, x.decode()))
-            labels_val_list_final.append(
-                int(img_path.split("train/", 1)[1][0:1]))
+            if 'png' in x:
+                img_val_list_final.append(os.path.join(img_path, x))
+                labels_val_list_final.append(
+                    int(img_path.split('\\')[1][0:1]))
 
 # test
     for img_path in pat_test:
         for x in os.listdir(img_path):
-            img_test_list_final.append(os.path.join(img_path, x.decode()))
-            labels_test_list_final.append(
-                int(img_path.split("train/", 1)[1][0:1]))
+            if 'png' in x:
+                img_test_list_final.append(os.path.join(img_path, x))
+                labels_test_list_final.append(
+                    int(img_path.split('\\')[1][0:1]))
 
     if __name__ == "__main__":
 
@@ -106,30 +108,23 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             print('number of files for testing: ', len(img_test_list_final))
 
         # custom dataloader
-        torch.set_num_threads(2)
-
         train_data = ImgDataset(img_train_list_final,
-                                labels_train_list_final, 'train', transf_train)
+                                labels_train_list_final, 'train')
         val_data = ImgDataset(img_val_list_final,
-                              labels_val_list_final, 'val', transf_val)
+                              labels_val_list_final, 'val')
 
         train_loader = torch.utils.data.DataLoader(
-            train_data, batch_size=args['batch_size'], shuffle=True, num_workers=8)
+            train_data, batch_size=args['batch_size'], shuffle=True, num_workers=0)
         val_loader = torch.utils.data.DataLoader(
-            val_data, batch_size=args['batch_size'], shuffle=True, num_workers=8)
+            val_data, batch_size=args['batch_size'], shuffle=True, num_workers=0)
 
         # =============================================================================
         # architecture
         # =============================================================================
 
-        # Initialize the model for this run
+        # Initialize the model
         model = ut.initialize_model(
             args['model_name'], num_classes, args['feature_extract'], use_pretrained=True)
-
-        # pretrained model
-        # model_path = r'/home/florianh/Desktop/code/pretrained_models/model_600ep_300px_lowlr_resnet152.pt'
-        # model_arch = 'resnet152'
-        # model = ut.load_pretrained_model(model_arch, model_path, 2, args['feature_extract'])
 
         params_to_update = model.parameters()
         #print("Params to learn:")
@@ -177,7 +172,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 
         class_weights = torch.FloatTensor(class_weights).to(device)
         criterion = nn.CrossEntropyLoss(class_weights)
-        #criterion = nn.CrossEntropyLoss()
+        # criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(params_to_update, lr=args['lr'])
         # model = torch.nn.DataParallel(model)
         model.to(device)
@@ -188,11 +183,12 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         val_acc = []
         train_loss = []
         train_acc = []
-        val_sens, val_spec, acc2_val = [], [], []
+
+        val_sens, val_spec = [], []
         total_step_train = len(train_loader)
         total_step_val = len(val_loader)
-        lab_list = list()
-        pred_list = list()
+        lab_list, pred_list = list(), list()
+
 
         for epoch in range(1, args['epx']+1):
             running_loss = 0.0
@@ -204,7 +200,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 
             for batch_idx, d in enumerate(train_loader):
                 data_t, target_t = d['img'].to(device), d['lab'].to(device)
-                # zero the parameter gradients
+                ### zero the parameter gradients
                 optimizer.zero_grad()
                 ### forward + backward + optimize
                 outputs_t = model(data_t.float())
@@ -213,27 +209,21 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 
                 loss_t.backward()
                 optimizer.step()
-                # print statistics
+                ### print statistics
                 running_loss += loss_t.item()
                 _, pred_t = torch.max(outputs_t, dim=1)
                 correct_t += torch.sum(pred_t == target_t).item()
                 total_t += target_t.size(0)
 
-                # ## visualize training images
+                ### visualize training images
                 # if batch_idx < 20:
                 #     img = data_t.cpu().numpy()
                 #     plt.figure(dpi=300)
                 #     plt.axis('off')
-                #     plt.imshow(img[0,2,:,:], cmap='bone')
-                #     plt.figure(dpi=300)
-                #     plt.axis('off')
-                #     plt.imshow(img[0,1,:,:], cmap='bone')
-                #     plt.figure(dpi=300)
-                #     plt.axis('off')
                 #     plt.imshow(img[0,0,:,:], cmap='bone')
-                # plt.imsave(str(batch_idx) + '.png', img[0,2,:,:], cmap='bone', dpi=300)
 
-            train_acc.append(100 * correct_t / total_t)
+
+            train_acc.append(100 * (correct_t / total_t))
             train_loss.append(running_loss / total_step_train)
             print(
                 f'\ntrain loss: {(train_loss[-1]):.4f}, train acc: {(train_acc[-1]):.4f}')
@@ -253,7 +243,8 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 
                     loss_v = criterion(outputs_v, target_v.long())
                     batch_loss += loss_v.item()
-                    _, pred_v = torch.max(outputs_v, dim=1)
+                    pred, pred_v = torch.max(outputs_v, dim=1)
+                    pred = pred.cpu()  # .numpy()
 
                     [p.cpu().numpy() for p in pred_v]
                     pred_list.append(pred_v)
@@ -261,7 +252,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                     correct_v += torch.sum(pred_v == target_v).item()
                     total_v += target_v.size(0)
 
-                    # visualize validation images
+                    ### visualize validation images
                     # img = data_v.cpu().numpy()
                     # plt.figure()
                     # plt.axis('off')
@@ -271,22 +262,28 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
                 sens, spec, _ = ut.calculate_sensitivity_specificity(
                     lab_list, pred_list, num_classes)
 
-                val_sens.append(sens)
-                val_spec.append(spec)
+
+
+
                 val_acc.append(100*correct_v/total_v)
+                val_spec.append(spec)
+                val_sens.append(sens)
                 val_loss.append(batch_loss / total_step_val)
 
                 network_learned = batch_loss < valid_loss_min
-                print(f'validation loss: {(val_loss[-1]):.4f}')
-                print(
-                    f'validation acc: {(val_acc[-1]):.4f}, validation spec: {(val_spec[-1]):.4f} , validation sens: {(val_sens[-1]):.4f}')
+
+                print('validation loss: ', round(val_loss[-1], 3))
+                print('validation acc: ', round(val_acc[-1], 3))
+                print('validation spec: ', round(val_spec[-1], 3))
+                print('validation sens: ', round(val_sens[-1], 3))
                 # Saving the best weight
                 if network_learned:
                     valid_loss_min = batch_loss
                     torch.save(model.state_dict(), os.path.join(new_dir,
-                     '{}_model_classification_trained.pt'.format(cv_counter)))
+                                                                '{}_model_classification_trained.pt'.format(cv_counter)))
 
             model.train()
+
         torch.cuda.empty_cache()
 
         print('best validation loss: ', round(min(val_loss), 3))
@@ -305,6 +302,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         plt.ylabel('loss', fontsize=12)
         plt.legend(loc='best')
         plt.savefig(os.path.join(final_dir, 'loss'))
+        plt.close()
 
         ################### accuracy graphs ###################
         fig = plt.figure(figsize=(20, 10))
@@ -315,24 +313,31 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         plt.ylabel('accuracy', fontsize=12)
         plt.legend(loc='best')
         plt.savefig(os.path.join(final_dir, 'accuracy'))
+        plt.close()
 
+
+        
         print('------------------------ cv split done ------------------------')
 
     # =============================================================================
     # saving data for final cross validated evaluation
     # =============================================================================
         final_val_acc.append(max(val_acc))
-        final_val_spec.append(max(val_spec))
         final_val_sens.append(max(val_sens))
-        print('cv_counter: ', cv_counter + '/' + args['cv_splits'])
+        final_val_spec.append(max(val_spec))
+
+        print('cv_counter: ', str(cv_counter) + '/' + str(args['cv_splits']))
         cv_counter += 1
 
         print()
         print()
         print(final_dir)
         print('------------------------ FINAL RESULTS ------------------------')
-        print('cross validated val accuracy: ', np.mean(final_val_acc))
+        print('cross validated val accuracy: ', round(np.mean(final_val_acc), 3))
+        print('cross validated val sensitivity: ', round(np.mean(final_val_sens), 3))
+        print('cross validated val specificity: ', round(np.mean(final_val_spec), 3))
         print('---------------------------------------------------------------')
+
         end = time.time()
         elapsed_time = end - start_time
         time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
@@ -341,3 +346,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         print('time elapsed: ', time.strftime(
             "%H:%M:%S", time.gmtime(elapsed_time)))
         torch.cuda.empty_cache()
+
+
+
+sys.stdout.close()

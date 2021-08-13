@@ -1,12 +1,9 @@
 """
-ImgDataset
+custom ImgDataset
 """
 
 from torch.utils.data import Dataset
-import os
 import utilz as ut
-import matplotlib.pyplot as plt
-import numpy as np
 import cv2
 
 class ImgDataset(Dataset):

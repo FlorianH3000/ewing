@@ -1,30 +1,19 @@
 """
-utilz
+utility functions
 """
 
 import numpy as np
-import os
 import torch
 import random
 from torchvision import models
 import torch.nn as nn
-from pydicom import dcmread
-import matplotlib.pyplot as plt
 from skimage.transform import resize
-from arguments import input_size, args
+from arguments import args
 from scipy import ndimage
 
 #########################################################################
 
-# def load_img(path_img):
-#     _, ext = os.path.splitext(path_img)
-#     print(ext)
-#     # if len(ext) > 6:
-#     # if 1 == 1:
-#     #     x = dcmread(path_img).pixel_array.astype(np.float32)/255
-# # 
-#     return x
-        
+
 
       
 def calculate_sensitivity_specificity(y_test, y_pred_test, num_classes):
@@ -65,6 +54,12 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
         """ Resnet18
         """
         model = models.resnet18(pretrained=use_pretrained)
+        set_parameter_requires_grad(model, feature_extract)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
+
+    if model_name == "resnet34":
+        model = models.resnet34(pretrained=use_pretrained)
         set_parameter_requires_grad(model, feature_extract)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_classes)
@@ -110,9 +105,9 @@ def set_parameter_requires_grad(model, feature_extracting):
 
     
 
-
 # =============================================================================
-# TRANSFORM
+# Adjsut image to suitable size and format
+# transforms
 # =============================================================================
 
 def adjust_img(img, phase):
@@ -125,28 +120,23 @@ def adjust_img(img, phase):
     
     if phase == 'train':
         
-        ##horizontal_flip
-        if 0.5 > random.random():
-            img = np.copy(np.flip(img, axis=1))
-        
-        ### vertical_flip
-        if 0 > random.random():
-            img = np.copy(np.flip(img, axis=0))
-
-        ## random_crop
-        if 0.5 > random.random():
-            h, w, _  = img.shape 
-            minimum = np.minimum(h, w)
-            margin = int(minimum*0.1)
-            margin_final = int(random.randint(0, margin)/2)
-            img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
-
-        if 0.5 > random.random():
-            x = random.randint(-25, 25)
-            img = ndimage.rotate(img, x, reshape=False)
-    
-    
-    
+        if args['augm_hflip']:
+            if 0.3 > random.random():
+                img = np.copy(np.flip(img, axis=1))
+        if args['augm_vflip']:
+            if 0 > random.random():
+                img = np.copy(np.flip(img, axis=0))
+        if args['augm_crop']:
+            if 0.3 > random.random():
+                h, w, _  = img.shape 
+                minimum = np.minimum(h, w)
+                margin = int(minimum*0.1)
+                margin_final = int(random.randint(0, margin)/2)
+                img = img[margin_final:(h-margin_final),margin_final:(w-margin_final)]
+        if args['augm_rotate']:
+            if 0.3 > random.random():
+                x = random.randint(-25, 25)
+                img = ndimage.rotate(img, x, reshape=False)
     
     h, w, _  = img.shape 
     minimum = np.minimum(h, w)
@@ -158,31 +148,9 @@ def adjust_img(img, phase):
     if h < w:
         img = img[:,margin:(w-margin)]
     img = img[:minimum, :minimum]
-    img = resize(img, (input_size,input_size))
+    img = resize(img, (args['input_size'], args['input_size']))
     # img = np.dstack((img,img, img))
     img = np.transpose(img, (2,0,1))    
     img = torch.from_numpy(img)
-    
-    # print(img.shape)
-    # plt.figure()
-    # plt.imshow(img[0,:,:])
-   
+       
     return img
-
-
-
-
-
-
-def load_pretrained_model(model_arch, model_path, num_classes, feature_extract):
-
-    if model_arch == 'resnet18':
-        model = models.resnet18(pretrained=True)
-        set_parameter_requires_grad(model, feature_extract)
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, num_classes)
-        model.load_state_dict(torch.load(model_path))
-        model.train()
-
-
-    return model
