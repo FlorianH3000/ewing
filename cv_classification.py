@@ -4,8 +4,6 @@ Classification cv stratified
 
 """
 import sys
-sys.stdout = open('console_output.txt', 'w')
-
 import json
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import time
@@ -18,9 +16,9 @@ import matplotlib.pyplot as plt
 import utilz as ut
 import torch
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 start_time = time.time()
 torch.backends.cudnn.benchmark = True
 
@@ -31,7 +29,6 @@ if not os.path.exists(new_dir):
     print('Directory ', new_dir, 'created!')
 else:
     print('Directory ', new_dir, 'already exists!')
-
 
 file_paths = list()
 labels_list_initial = list()
@@ -82,7 +79,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             if 'png' in x:
                 img_train_list_final.append(os.path.join(img_path, x))
                 labels_train_list_final.append(
-                    int(img_path.split('\\')[1][0:1]))
+                    int(img_path.split('\\')[1][0:3]))
 
 # val
     for img_path in img_val:
@@ -90,7 +87,7 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             if 'png' in x:
                 img_val_list_final.append(os.path.join(img_path, x))
                 labels_val_list_final.append(
-                    int(img_path.split('\\')[1][0:1]))
+                    int(img_path.split('\\')[1][0:3]))
 
 # test
     for img_path in pat_test:
@@ -98,7 +95,9 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
             if 'png' in x:
                 img_test_list_final.append(os.path.join(img_path, x))
                 labels_test_list_final.append(
-                    int(img_path.split('\\')[1][0:1]))
+                    int(img_path.split('\\')[1][0:3]))
+
+
 
     if __name__ == "__main__":
 
@@ -159,10 +158,10 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         classes.sort()
         # calculate the weigths
         for i in range(len(classes)):
+            print(i)
+            print(class_weights[i])
             class_weights[i] = median_freq/count_labels[i]
-
-        # print the weights
-        for i in range(len(classes)):
+            # print the weights
             print('weights: ', classes[i], ":", class_weights[i])
 
         # =============================================================================
@@ -172,7 +171,6 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 
         class_weights = torch.FloatTensor(class_weights).to(device)
         criterion = nn.CrossEntropyLoss(class_weights)
-        # criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(params_to_update, lr=args['lr'])
         # model = torch.nn.DataParallel(model)
         model.to(device)
@@ -292,7 +290,12 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
         print('best validation sens: ', round(max(val_sens), 3))
 
         final_dir = os.path.join(new_dir, str(cv_counter))
-        os.makedirs(final_dir)
+        if not os.path.exists(final_dir):
+            os.makedirs(final_dir)
+            print('Directory for result: ', final_dir, 'created!')
+        else:
+            print('Directory for result: ', final_dir, 'already exists!')
+ 
         ################### loss graphs ###################
         fig = plt.figure(figsize=(20, 10))
         plt.title("Loss")
@@ -340,13 +343,18 @@ for train_index, val_index in skf.split(pat_train_val, pat_label_train_val):
 
         end = time.time()
         elapsed_time = end - start_time
-        time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
-        with open(os.path.join(final_dir, 'args.txt'), 'w') as file:
-            file.write(json.dumps(args))
-        print('time elapsed: ', time.strftime(
-            "%H:%M:%S", time.gmtime(elapsed_time)))
+        print('elapsed mins: ', elapsed_time/60)
+        print('elapsed hours: ', elapsed_time/3600)
         torch.cuda.empty_cache()
+        
+    
+            
+        
+
+    if cv_counter > args['cv_splits']:
+        with open(os.path.join(new_dir, 'args.txt'), 'w') as file:
+            file.write(json.dumps(args))
 
 
 
-sys.stdout.close()
+
