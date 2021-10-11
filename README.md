@@ -1,4 +1,4 @@
-# Ewing vs. acute Osteomyelitis
+# Ewing sarcoma vs. acute Osteomyelitis in pediatric patients
 
 This code was developed for both classification of healthy/normal vs. pathological cases as well as Ewing sarcoma vs. acute osteomyelitis.
 Due to local data security and data privacy concerns, the dataset cannot be published. But the code should work as basis for other tumour classifications with x-ray images.
