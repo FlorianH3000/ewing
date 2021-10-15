@@ -49,10 +49,7 @@ parser.add_argument('--augm_rotate',
                     type=bool, default=False)
 
 parser.add_argument('--data',
-        type=str, default='data') ###################
-# parser.add_argument('--data',             
-#                     type=str, default='P:/artificialintelligence_staff/Sarcoma/03_ewing vs om/final_code/data') ### om acute
-
+        type=str, default='data') #### adjust path
 
 """ train lat or all layers """
 parser.add_argument('--feature_extract',
